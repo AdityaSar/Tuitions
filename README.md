@@ -15,15 +15,16 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
   - **Physics**: 8-class blocks (INR), with progress bar and `Payment due` banner.
   - **Chemistry**: Variable block sizes (10 / 12 classes), tracked per payment.
   - **Computers**: Irregular block sizes (AED), tracked per payment.
-- 📋 **Class Log Table**:
+- 📋 **Class Log Table & Editing**:
   - Auto-calculates Class Number (`#`) and Day of Week (`Monday`, `Tuesday`, etc.).
   - Handles legacy `null` dates cleanly under an `Undated` category.
   - Color-coded rows by Fee Block.
+  - **Log Editing**: Click the **Edit** button on any table row to modify the date, time, hours, or attendance status.
   - Interactive search filter across dates, times, and status.
   - Filter log by specific month.
 - 📈 **Monthly Chart**: Visual bar chart powered by Chart.js showing attended classes per month.
-- ➕ **Add Class Form & JSON Generator**:
-  - Form to log new classes per subject in-memory.
+- ➕ **Add / Edit Class Form & JSON Generator**:
+  - Form to log new classes or update existing classes per subject in-memory.
   - **Copy Updated JSON**: Generates updated JSON formatting to commit directly into `/data/classes-{subject}.json` on GitHub.
   - **CSV Import**: Easily upload CSV logs per subject.
 - 📤 **Exporting**:
@@ -83,11 +84,11 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
 
 ---
 
-## How to Add a Class (Updating Data on GitHub)
+## How to Add or Edit a Class (Updating Data on GitHub)
 
 1. Select the relevant subject tab (e.g. **Maths**).
-2. Scroll to **Add New Class** form.
-3. Fill in date, time, hours, and attendance status, then click **Add Class**.
+2. **To Add a Class**: Fill in the **Add New Class** form.
+3. **To Edit a Class**: Click **Edit** next to any class row in the Class Log table. The details will populate into the form; make your changes and click **Update Class**.
 4. Click **Copy Updated JSON**.
 5. Navigate to your GitHub repository: `data/classes-{subject}.json`.
 6. Click the edit (pencil) icon, replace file contents with copied JSON, and click **Commit changes**.

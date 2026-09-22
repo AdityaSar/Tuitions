@@ -44,6 +44,7 @@ const store = {
 };
 
 let currentTab = 'all'; // Active tab: 'all' or subject key
+let editingClassId = null; // Stores ID or reference index of class currently being edited
 let monthlyChart = null; // Chart.js instance reference
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -107,8 +108,11 @@ function setupEventListeners() {
     }
   });
 
-  // Add Class Form submission
-  document.getElementById('addClassForm').addEventListener('submit', handleAddClassSubmit);
+  // Add / Edit Class Form submission
+  document.getElementById('addClassForm').addEventListener('submit', handleFormSubmit);
+
+  // Cancel Edit button
+  document.getElementById('cancelEditBtn').addEventListener('click', resetFormState);
 
   // Copy JSON button
   document.getElementById('copyJsonBtn').addEventListener('click', handleCopyJson);
@@ -127,6 +131,7 @@ function setupEventListeners() {
 
 function switchTab(tab) {
   currentTab = tab;
+  resetFormState();
 
   // Update tab buttons visual active state
   document.querySelectorAll('.tab-btn').forEach((btn) => {
@@ -331,7 +336,6 @@ function renderSubjectBlockTracker(subjectKey, processedClasses) {
   const progressBarWrapper = document.getElementById('progressBarWrapper');
 
   if (cfg.hasFixedBlock) {
-    // Maths (10) and Physics (8)
     progressBarWrapper.classList.remove('hidden');
     const blockSize = cfg.blockSize;
     const currentBlockNum = attendedCount === 0 ? 1 : Math.ceil(attendedCount / blockSize);
@@ -344,7 +348,6 @@ function renderSubjectBlockTracker(subjectKey, processedClasses) {
     const percentage = (usedInCurrentBlock / blockSize) * 100;
     document.getElementById('blockProgressBar').style.width = `${percentage}%`;
 
-    // Check if payment is due
     const totalPaymentsRecorded = (store[subjectKey].payments || []).length;
     const isPaymentDue = (usedInCurrentBlock === blockSize && totalPaymentsRecorded < currentBlockNum) ||
                          (attendedCount > 0 && attendedCount % blockSize === 0 && totalPaymentsRecorded < Math.ceil(attendedCount / blockSize));
@@ -357,7 +360,6 @@ function renderSubjectBlockTracker(subjectKey, processedClasses) {
       banner.classList.add('hidden');
     }
   } else {
-    // Chemistry & Computers: Variable / Irregular block sizes
     progressBarWrapper.classList.add('hidden');
     banner.classList.add('hidden');
 
@@ -424,7 +426,7 @@ function renderClassesTable(processedClasses) {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 1.5rem; color: var(--text-muted);">No classes found matching criteria.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 1.5rem; color: var(--text-muted);">No classes found matching criteria.</td></tr>`;
     return;
   }
 
@@ -444,6 +446,9 @@ function renderClassesTable(processedClasses) {
     const hoursDisplay = item.hours !== null && item.hours !== undefined ? `${item.hours} hrs` : '-';
     const attendedDisplay = item.attended ? `<span class="status-pill ${statusClass}">${item.attended}</span>` : '-';
 
+    // Target identifier for editing (id or array index)
+    const classIdAttr = item.id !== undefined ? item.id : store[currentTab].classes.indexOf(item);
+
     tr.innerHTML = `
       <td>${item.classNum !== null ? item.classNum : '-'}</td>
       <td>${dateDisplay}</td>
@@ -452,9 +457,20 @@ function renderClassesTable(processedClasses) {
       <td>${hoursDisplay}</td>
       <td>${attendedDisplay}</td>
       <td>${item.feeBlock ? 'Block ' + item.feeBlock : '-'}</td>
+      <td class="no-print">
+        <button type="button" class="btn btn-secondary btn-sm btn-edit" data-id="${classIdAttr}">Edit</button>
+      </td>
     `;
 
     tbody.appendChild(tr);
+  });
+
+  // Attach event listeners to Edit buttons
+  tbody.querySelectorAll('.btn-edit').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const id = e.target.getAttribute('data-id');
+      startEditingClass(id);
+    });
   });
 }
 
@@ -568,32 +584,118 @@ function updateJsonPreviewTextArea(subjectKey) {
 }
 
 // ==========================================
-// 7. FORM & ACTION HANDLERS
+// 7. EDIT LOG & FORM HANDLERS
 // ==========================================
 
-function handleAddClassSubmit(e) {
+/**
+ * Loads an existing class entry into the form for editing.
+ */
+function startEditingClass(targetId) {
+  if (currentTab === 'all') return;
+  const rawClasses = store[currentTab].classes || [];
+
+  let classToEdit = null;
+
+  // Find by numerical ID or index
+  if (targetId.startsWith && targetId.startsWith('idx_')) {
+    const idx = parseInt(targetId.replace('idx_', ''), 10);
+    classToEdit = rawClasses[idx];
+  } else {
+    classToEdit = rawClasses.find(c => String(c.id) === String(targetId));
+    if (!classToEdit) {
+      const idx = parseInt(targetId, 10);
+      classToEdit = rawClasses[idx];
+    }
+  }
+
+  if (!classToEdit) return;
+
+  editingClassId = targetId;
+  document.getElementById('editClassId').value = targetId;
+
+  // Populate form fields
+  document.getElementById('inputDate').value = classToEdit.date || '';
+  document.getElementById('inputTime').value = classToEdit.time || '';
+  document.getElementById('inputHours').value = classToEdit.hours !== null && classToEdit.hours !== undefined ? classToEdit.hours : 1.0;
+  document.getElementById('inputAttended').value = classToEdit.attended || 'Yes';
+
+  // Update form UI state to Edit Mode
+  document.getElementById('formTitle').textContent = 'Edit Class Entry';
+  document.getElementById('submitClassBtn').textContent = 'Update Class';
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+  // Scroll to form smoothly
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Resets form fields and restores UI state to "Add New Class".
+ */
+function resetFormState() {
+  editingClassId = null;
+  document.getElementById('editClassId').value = '';
+
+  document.getElementById('inputDate').value = '';
+  document.getElementById('inputTime').value = '';
+  document.getElementById('inputHours').value = 1.5;
+  document.getElementById('inputAttended').value = 'Yes';
+
+  document.getElementById('formTitle').textContent = 'Add New Class';
+  document.getElementById('submitClassBtn').textContent = 'Add Class';
+  document.getElementById('cancelEditBtn').classList.add('hidden');
+}
+
+/**
+ * Handles form submission for both Adding a new class and Updating an existing class.
+ */
+function handleFormSubmit(e) {
   e.preventDefault();
   if (currentTab === 'all') return;
 
   const rawClasses = store[currentTab].classes;
+  const dateVal = document.getElementById('inputDate').value || null;
+  const timeVal = document.getElementById('inputTime').value.trim() || null;
+  const hoursVal = parseFloat(document.getElementById('inputHours').value) || 1.0;
+  const attendedVal = document.getElementById('inputAttended').value;
 
-  // Auto increment ID if present
-  const maxId = rawClasses.reduce((max, c) => (typeof c.id === 'number' ? Math.max(max, c.id) : max), 0);
+  if (editingClassId !== null) {
+    // EDIT MODE: Update existing entry
+    let targetObj = null;
+    if (editingClassId.startsWith && editingClassId.startsWith('idx_')) {
+      const idx = parseInt(editingClassId.replace('idx_', ''), 10);
+      targetObj = rawClasses[idx];
+    } else {
+      targetObj = rawClasses.find(c => String(c.id) === String(editingClassId));
+      if (!targetObj) {
+        const idx = parseInt(editingClassId, 10);
+        targetObj = rawClasses[idx];
+      }
+    }
 
-  const newClass = {
-    id: maxId + 1,
-    date: document.getElementById('inputDate').value || null,
-    time: document.getElementById('inputTime').value.trim() || null,
-    hours: parseFloat(document.getElementById('inputHours').value) || 1.0,
-    attended: document.getElementById('inputAttended').value
-  };
+    if (targetObj) {
+      targetObj.date = dateVal;
+      targetObj.time = timeVal;
+      targetObj.hours = hoursVal;
+      targetObj.attended = attendedVal;
+    }
+  } else {
+    // ADD MODE: Create new entry
+    const maxId = rawClasses.reduce((max, c) => (typeof c.id === 'number' ? Math.max(max, c.id) : max), 0);
 
-  rawClasses.push(newClass);
+    const newClass = {
+      id: maxId + 1,
+      date: dateVal,
+      time: timeVal,
+      hours: hoursVal,
+      attended: attendedVal
+    };
 
+    rawClasses.push(newClass);
+  }
+
+  resetFormState();
   populateMonthFilterOptions(currentTab);
   renderSubjectTracker(currentTab);
-
-  document.getElementById('inputTime').value = '';
 }
 
 function handleCopyJson() {
@@ -612,7 +714,6 @@ function handleCopyJson() {
 
 function handleDownloadCsv() {
   if (currentTab === 'all') {
-    // Export all subjects combined CSV
     let allRows = [['Subject', '#', 'Date', 'Day', 'Time', 'Hours', 'Attended', 'Fee Block']];
 
     SUBJECTS.forEach((subKey) => {
@@ -634,7 +735,6 @@ function handleDownloadCsv() {
     const csvContent = allRows.map(r => r.join(',')).join('\n');
     downloadCsvFile(csvContent, 'all_subjects_tuition_classes.csv');
   } else {
-    // Export single subject CSV
     const processed = getProcessedClasses(currentTab);
     const headers = ['#', 'Date', 'Day', 'Time', 'Hours', 'Attended', 'Fee Block'];
     const rows = processed.map(c => [
@@ -726,6 +826,7 @@ function handleCsvImport(e) {
 
     if (importedClasses.length > 0) {
       store[currentTab].classes = importedClasses;
+      resetFormState();
       populateMonthFilterOptions(currentTab);
       renderSubjectTracker(currentTab);
       alert(`Successfully imported ${importedClasses.length} class(es) into ${SUBJECT_CONFIG[currentTab].name}!`);

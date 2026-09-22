@@ -1,5 +1,0 @@
-127.0.0.1 - - [22/Sep/2026 08:19:33] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [22/Sep/2026 08:19:33] "GET /script.js HTTP/1.1" 200 -
-127.0.0.1 - - [22/Sep/2026 08:19:33] "GET /style.css HTTP/1.1" 200 -
-127.0.0.1 - - [22/Sep/2026 08:19:34] "GET /data/classes.json HTTP/1.1" 200 -
-127.0.0.1 - - [22/Sep/2026 08:19:34] "GET /data/payments.json HTTP/1.1" 200 -

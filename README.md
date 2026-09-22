@@ -1,6 +1,6 @@
 # Tuition Class Tracker
 
-A clean, responsive, mobile-first static web application for tracking tuition classes, fee blocks, fee payments, and monthly attendance statistics.
+A clean, responsive, mobile-first static web application for tracking tuition classes, fee blocks, and fee payments across multiple subjects (**Maths, Physics, Chemistry, Computers**).
 
 Hosted on **GitHub Pages** with zero backend, zero build steps, and zero frameworks (built with vanilla HTML, CSS, and JavaScript, plus Chart.js via CDN).
 
@@ -8,20 +8,26 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
 
 ## Features
 
-- 📊 **Dashboard Cards**: Track total classes attended, total hours, total fees paid, and average cost per class.
-- 📦 **Fee Block Tracker**: Group attended classes into blocks of 10. Displays progress bar (`X / 10 used`) and alerts when payment is due (`Payment due: Rs. 11,250`).
+- 📑 **Subject Navigation Tabs**: Switch seamlessly between **All Subjects Overview**, **Maths**, **Physics**, **Chemistry**, and **Computers**.
+- 📊 **All Subjects Summary**: View combined totals (attended classes, total hours) and separate currency fee totals (INR for Maths/Physics/Chemistry, AED for Computers).
+- 📦 **Subject-Specific Fee Block Tracker**:
+  - **Maths**: 10-class blocks (INR), with progress bar and `Payment due` banner.
+  - **Physics**: 8-class blocks (INR), with progress bar and `Payment due` banner.
+  - **Chemistry**: Variable block sizes (10 / 12 classes), tracked per payment.
+  - **Computers**: Irregular block sizes (AED), tracked per payment.
 - 📋 **Class Log Table**:
   - Auto-calculates Class Number (`#`) and Day of Week (`Monday`, `Tuesday`, etc.).
+  - Handles legacy `null` dates cleanly under an `Undated` category.
   - Color-coded rows by Fee Block.
-  - Interactive search filter across notes, status, dates, and times.
+  - Interactive search filter across dates, times, and status.
   - Filter log by specific month.
 - 📈 **Monthly Chart**: Visual bar chart powered by Chart.js showing attended classes per month.
 - ➕ **Add Class Form & JSON Generator**:
-  - Form to log new classes in-memory.
-  - **Copy Updated JSON**: Generates updated JSON formatting so you can copy and commit directly into `data/classes.json` on GitHub.
-  - **CSV Import**: Easily upload CSV logs and convert them to the JSON tracking format.
+  - Form to log new classes per subject in-memory.
+  - **Copy Updated JSON**: Generates updated JSON formatting to commit directly into `/data/classes-{subject}.json` on GitHub.
+  - **CSV Import**: Easily upload CSV logs per subject.
 - 📤 **Exporting**:
-  - **Download CSV**: Download full class history as CSV.
+  - **Download CSV**: Download full class history (single subject or all combined).
   - **Print Summary**: Dedicated print stylesheet formatted for clean paper/PDF reporting.
 - 🌙 **Dark Mode**: Automatic dark mode based on system preferences.
 
@@ -30,78 +36,68 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
 ## File Structure
 
 ```text
-├── index.html               # Main HTML page structure
-├── style.css                # Clean, responsive CSS with automatic dark mode
-├── script.js                # Well-commented vanilla JavaScript application logic
+├── index.html                  # Main HTML page structure with tabbed layout
+├── style.css                   # Clean, responsive CSS with dark mode
+├── script.js                   # Multi-subject JavaScript application logic
 ├── data/
-│   ├── classes.json         # Single source of truth for class entries
-│   └── payments.json        # Single source of truth for fee payment records
+│   ├── classes-maths.json      # Maths class records
+│   ├── payments-maths.json     # Maths payment records
+│   ├── classes-physics.json    # Physics class records
+│   ├── payments-physics.json   # Physics payment records
+│   ├── classes-chemistry.json  # Chemistry class records
+│   ├── payments-chemistry.json# Chemistry payment records
+│   ├── classes-computers.json  # Computers class records
+│   └── payments-computers.json# Computers payment records
 ├── .github/
 │   └── workflows/
-│       └── pages.yml        # GitHub Actions workflow for deployment
-└── README.md                # Project setup and usage documentation
+│       └── pages.yml           # GitHub Actions workflow for deployment
+└── README.md                   # Setup and usage documentation
 ```
 
 ---
 
-## Data Model
+## Data Schemas
 
-### Classes Data (`/data/classes.json`)
-Each entry in `classes.json`:
+### Classes File (`/data/classes-{subject}.json`)
 ```json
 {
+  "id": 1,
   "date": "2026-03-24",
-  "time": "7:00 PM - 8:30 PM",
-  "timezone": "IST",
+  "time": "7 PM - 8:30 PM IST",
   "hours": 1.5,
-  "attended": "Yes",
-  "notes": "Calculus fundamentals"
+  "attended": "Yes"
 }
 ```
 *Note: Day of week and class numbers (`#`) are NOT stored in JSON; they are dynamically computed in JavaScript.*
 
-### Payment Data (`/data/payments.json`)
-Each entry in `payments.json`:
+### Payments File (`/data/payments-{subject}.json`)
 ```json
 {
-  "date": "2026-03-24",
-  "amount": 11250,
-  "classes": 10,
-  "note": "Paid in advance"
+  "date": "2026-04-26",
+  "amount": 1100,
+  "currency": "AED",
+  "note": "Paid fees of AED 1100 till 26th April on 11th May"
 }
 ```
+*Note: Entries with `amount: null` are rendered with their raw note text and excluded from numeric fee sums.*
 
 ---
 
 ## How to Add a Class (Updating Data on GitHub)
 
-Since this site is fully static with no backend database, follow these simple steps to add a new class:
-
-1. Open the website and scroll down to the **Add New Class** form.
-2. Enter the date, time, timezone, hours, status, and optional notes. Click **Add Class**.
-3. Click the **Copy Updated JSON** button.
-4. Navigate to your repository on GitHub: `data/classes.json`.
-5. Click the edit (pencil) icon, replace the file content with the copied JSON, and click **Commit changes**.
-6. GitHub Actions will automatically rebuild and deploy the updated site!
-
----
-
-## How to Enable GitHub Pages
-
-1. Push this repository to GitHub on the `main` branch.
-2. Go to your repository **Settings** tab.
-3. On the left sidebar, click **Pages** (under Code and automation).
-4. Under **Build and deployment**:
-   - Set **Source** to **GitHub Actions**.
-5. Once configured, pushing commits to `main` will trigger the GitHub Actions workflow in `.github/workflows/pages.yml` and publish your site!
+1. Select the relevant subject tab (e.g. **Maths**).
+2. Scroll to **Add New Class** form.
+3. Fill in date, time, hours, and attendance status, then click **Add Class**.
+4. Click **Copy Updated JSON**.
+5. Navigate to your GitHub repository: `data/classes-{subject}.json`.
+6. Click the edit (pencil) icon, replace file contents with copied JSON, and click **Commit changes**.
 
 ---
 
 ## Running Locally
 
-Because the application uses `fetch()` to load `/data/classes.json` and `/data/payments.json`, serve the files using a local HTTP server:
+Because the application uses `fetch()` to load the JSON files from `/data/`, serve the directory using a local HTTP server:
 
-Using Python:
 ```bash
 python3 -m http.server 8000
 ```

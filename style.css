@@ -129,6 +129,91 @@ body {
   flex-wrap: wrap;
 }
 
+/* Navigation Tabs */
+.subject-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--secondary-bg);
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background-color: var(--card-bg);
+}
+
+/* Content & View Sections */
+.app-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tab-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Summary Breakdown Grid */
+.summary-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .summary-breakdown-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.subject-summary-card h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--primary-color);
+}
+
+.summary-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.summary-details-item {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.summary-details-item:last-child {
+  border-bottom: none;
+}
+
 /* Card UI */
 .card {
   background-color: var(--card-bg);
@@ -269,7 +354,7 @@ body {
 }
 
 /* Table Section */
-.table-card {
+.table-card, .payments-card {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -289,7 +374,7 @@ body {
   }
 }
 
-.table-header h2 {
+.table-header h2, .payments-card h2 {
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -374,10 +459,7 @@ body {
 
 @media (min-width: 640px) {
   .form-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .form-group.full-width {
-    grid-column: span 3;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -512,6 +594,10 @@ body {
 
   .no-print {
     display: none !important;
+  }
+
+  .tab-view.hidden {
+    display: flex !important;
   }
 
   .card {

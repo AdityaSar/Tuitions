@@ -13,7 +13,7 @@
     <header class="app-header">
       <div class="header-brand">
         <h1>Tuition Class Tracker</h1>
-        <p class="subtitle">Track classes, fee blocks, payments, and attendance</p>
+        <p class="subtitle">Track classes, fee blocks, and payments across subjects</p>
       </div>
       <div class="header-actions no-print">
         <button id="printBtn" class="btn btn-secondary">
@@ -27,164 +27,219 @@
       </div>
     </header>
 
+    <!-- Navigation Tabs -->
+    <nav class="subject-tabs no-print" aria-label="Subject Selection">
+      <button class="tab-btn active" data-tab="all">All Subjects</button>
+      <button class="tab-btn" data-tab="maths">Maths</button>
+      <button class="tab-btn" data-tab="physics">Physics</button>
+      <button class="tab-btn" data-tab="chemistry">Chemistry</button>
+      <button class="tab-btn" data-tab="computers">Computers</button>
+    </nav>
+
     <main class="app-content">
-      <!-- Fee Due Alert Banner -->
-      <div id="paymentDueBanner" class="alert alert-warning hidden" role="alert">
-        <div class="alert-icon">⚠️</div>
-        <div class="alert-body">
-          <strong>Payment Due: Rs. 11,250</strong>
-          <span>Current fee block has reached 10 classes. Please record payment in <code>data/payments.json</code>.</span>
-        </div>
-      </div>
+      <!-- ALL SUBJECTS SUMMARY VIEW -->
+      <section id="viewAllSubjects" class="tab-view">
+        <div class="card">
+          <h2>All Subjects Overview</h2>
+          <p class="text-muted" style="margin-bottom: 1.25rem;">Combined totals across all 4 subjects</p>
 
-      <!-- Dashboard Cards -->
-      <section class="dashboard-grid">
-        <div class="card metric-card">
-          <span class="card-title">Classes Attended</span>
-          <div id="metricClassesAttended" class="card-value">0</div>
-          <span id="metricClassesSubtext" class="card-subtext">0 total logged</span>
-        </div>
-
-        <div class="card metric-card">
-          <span class="card-title">Total Hours</span>
-          <div id="metricTotalHours" class="card-value">0 hrs</div>
-          <span class="card-subtext">Attended classes</span>
-        </div>
-
-        <div class="card metric-card">
-          <span class="card-title">Total Fees Paid</span>
-          <div id="metricTotalFees" class="card-value">Rs. 0</div>
-          <span id="metricPaymentsCount" class="card-subtext">0 payment records</span>
-        </div>
-
-        <div class="card metric-card">
-          <span class="card-title">Avg. Cost / Class</span>
-          <div id="metricAvgCost" class="card-value">Rs. 0</div>
-          <span class="card-subtext">Based on attended classes</span>
-        </div>
-      </section>
-
-      <!-- Fee Block Progress Tracker -->
-      <section class="card block-tracker-card">
-        <div class="block-tracker-header">
-          <div>
-            <h2>Current Fee Block Status</h2>
-            <p id="blockTrackerSubtext" class="text-muted">Block 1 Progress</p>
-          </div>
-          <span id="blockBadge" class="badge">0 / 10 used</span>
-        </div>
-        <div class="progress-bar-container">
-          <div id="blockProgressBar" class="progress-bar" style="width: 0%;"></div>
-        </div>
-      </section>
-
-      <!-- Monthly Chart Section -->
-      <section class="card chart-card">
-        <h2>Classes Per Month</h2>
-        <div class="chart-container">
-          <canvas id="monthlyChart"></canvas>
-        </div>
-      </section>
-
-      <!-- Classes Table Section -->
-      <section class="card table-card">
-        <div class="table-header">
-          <h2>Class Log</h2>
-          <div class="table-controls no-print">
-            <div class="control-group">
-              <label for="monthFilter" class="sr-only">Filter by Month</label>
-              <select id="monthFilter" class="form-control">
-                <option value="all">All Months</option>
-              </select>
+          <div class="dashboard-grid">
+            <div class="card metric-card">
+              <span class="card-title">Total Attended Classes</span>
+              <div id="summaryTotalAttended" class="card-value">0</div>
+              <span id="summaryTotalLogged" class="card-subtext">0 total logged</span>
             </div>
-            <div class="control-group">
-              <label for="searchInput" class="sr-only">Search</label>
-              <input type="text" id="searchInput" class="form-control" placeholder="Search notes, date, status...">
+
+            <div class="card metric-card">
+              <span class="card-title">Total Hours</span>
+              <div id="summaryTotalHours" class="card-value">0 hrs</div>
+              <span class="card-subtext">Attended classes</span>
+            </div>
+
+            <div class="card metric-card">
+              <span class="card-title">INR Total Fees Paid</span>
+              <div id="summaryInrPaid" class="card-value">Rs. 0</div>
+              <span class="card-subtext">Maths, Physics &amp; Chemistry</span>
+            </div>
+
+            <div class="card metric-card">
+              <span class="card-title">AED Total Fees Paid</span>
+              <div id="summaryAedPaid" class="card-value">AED 0</div>
+              <span class="card-subtext">Computers</span>
             </div>
           </div>
         </div>
 
-        <div class="table-responsive">
-          <table class="classes-table" id="classesTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Date</th>
-                <th>Day</th>
-                <th>Time</th>
-                <th>Hours</th>
-                <th>Attended</th>
-                <th>Fee Block</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody id="classesTableBody">
-              <!-- Rows inserted dynamically -->
-            </tbody>
-          </table>
+        <!-- Subject Breakdowns Summary Grid -->
+        <div class="summary-breakdown-grid" id="summaryBreakdownGrid">
+          <!-- Populated dynamically by JS -->
         </div>
       </section>
 
-      <!-- Add Class Form Section -->
-      <section class="card form-card no-print">
-        <h2>Add New Class</h2>
-        <form id="addClassForm" class="class-form">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="inputDate">Date *</label>
-              <input type="date" id="inputDate" class="form-control" required>
-            </div>
+      <!-- SUBJECT TRACKER VIEW (Shared container for Maths, Physics, Chemistry, Computers) -->
+      <section id="viewSubjectTracker" class="tab-view hidden">
+        <!-- Fee Due Alert Banner -->
+        <div id="paymentDueBanner" class="alert alert-warning hidden" role="alert">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-body">
+            <strong id="bannerTitle">Payment Due</strong>
+            <span id="bannerText">Current fee block limit reached. Please record payment in JSON.</span>
+          </div>
+        </div>
 
-            <div class="form-group">
-              <label for="inputTime">Time (optional)</label>
-              <input type="text" id="inputTime" class="form-control" placeholder="e.g. 7:00 PM - 8:30 PM">
-            </div>
+        <!-- Dashboard Cards -->
+        <section class="dashboard-grid">
+          <div class="card metric-card">
+            <span class="card-title">Classes Attended</span>
+            <div id="metricClassesAttended" class="card-value">0</div>
+            <span id="metricClassesSubtext" class="card-subtext">0 total logged</span>
+          </div>
 
-            <div class="form-group">
-              <label for="inputTimezone">Timezone</label>
-              <select id="inputTimezone" class="form-control">
-                <option value="IST" selected>IST</option>
-                <option value="GST">GST</option>
-                <option value="">None</option>
-              </select>
-            </div>
+          <div class="card metric-card">
+            <span class="card-title">Total Hours</span>
+            <div id="metricTotalHours" class="card-value">0 hrs</div>
+            <span class="card-subtext">Attended classes</span>
+          </div>
 
-            <div class="form-group">
-              <label for="inputHours">Hours *</label>
-              <input type="number" id="inputHours" class="form-control" step="0.5" min="0.5" value="1.5" required>
-            </div>
+          <div class="card metric-card">
+            <span class="card-title">Total Fees Paid</span>
+            <div id="metricTotalFees" class="card-value">Rs. 0</div>
+            <span id="metricPaymentsCount" class="card-subtext">0 payment records</span>
+          </div>
 
-            <div class="form-group">
-              <label for="inputAttended">Attended Status *</label>
-              <select id="inputAttended" class="form-control" required>
-                <option value="Yes" selected>Yes</option>
-                <option value="No">No</option>
-                <option value="Rescheduled">Rescheduled</option>
-              </select>
-            </div>
+          <div class="card metric-card">
+            <span class="card-title">Avg. Cost / Class</span>
+            <div id="metricAvgCost" class="card-value">Rs. 0</div>
+            <span class="card-subtext">Based on attended classes</span>
+          </div>
+        </section>
 
-            <div class="form-group full-width">
-              <label for="inputNotes">Notes</label>
-              <input type="text" id="inputNotes" class="form-control" placeholder="Topics covered or notes...">
+        <!-- Fee Block Progress Tracker -->
+        <section class="card block-tracker-card" id="blockTrackerCard">
+          <div class="block-tracker-header">
+            <div>
+              <h2 id="blockTrackerTitle">Fee Block Status</h2>
+              <p id="blockTrackerSubtext" class="text-muted">Block Progress</p>
+            </div>
+            <span id="blockBadge" class="badge">0 / 10 used</span>
+          </div>
+          <div id="progressBarWrapper" class="progress-bar-container">
+            <div id="blockProgressBar" class="progress-bar" style="width: 0%;"></div>
+          </div>
+        </section>
+
+        <!-- Payments Log List (Collapsible/Preview) -->
+        <section class="card payments-card">
+          <h2>Payment Records</h2>
+          <div class="table-responsive">
+            <table class="classes-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTableBody">
+                <!-- Payment rows inserted dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Monthly Chart Section -->
+        <section class="card chart-card">
+          <h2>Classes Per Month</h2>
+          <div class="chart-container">
+            <canvas id="monthlyChart"></canvas>
+          </div>
+        </section>
+
+        <!-- Classes Table Section -->
+        <section class="card table-card">
+          <div class="table-header">
+            <h2>Class Log</h2>
+            <div class="table-controls no-print">
+              <div class="control-group">
+                <label for="monthFilter" class="sr-only">Filter by Month</label>
+                <select id="monthFilter" class="form-control">
+                  <option value="all">All Months</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label for="searchInput" class="sr-only">Search</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Search date, status, time...">
+              </div>
             </div>
           </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Add Class</button>
-            <button type="button" id="copyJsonBtn" class="btn btn-secondary">Copy Updated JSON</button>
-            <label class="btn btn-secondary btn-file">
-              Import CSV <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+          <div class="table-responsive">
+            <table class="classes-table" id="classesTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Date</th>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Hours</th>
+                  <th>Attended</th>
+                  <th>Fee Block</th>
+                </tr>
+              </thead>
+              <tbody id="classesTableBody">
+                <!-- Rows inserted dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Add Class Form Section -->
+        <section class="card form-card no-print">
+          <h2>Add New Class</h2>
+          <form id="addClassForm" class="class-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="inputDate">Date *</label>
+                <input type="date" id="inputDate" class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label for="inputTime">Time (optional)</label>
+                <input type="text" id="inputTime" class="form-control" placeholder="e.g. 7:00 PM - 8:30 PM IST">
+              </div>
+
+              <div class="form-group">
+                <label for="inputHours">Hours *</label>
+                <input type="number" id="inputHours" class="form-control" step="0.5" min="0.5" value="1.5" required>
+              </div>
+
+              <div class="form-group">
+                <label for="inputAttended">Attended Status *</label>
+                <select id="inputAttended" class="form-control" required>
+                  <option value="Yes" selected>Yes</option>
+                  <option value="No">No</option>
+                  <option value="Rescheduled">Rescheduled</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Add Class</button>
+              <button type="button" id="copyJsonBtn" class="btn btn-secondary">Copy Updated JSON</button>
+              <label class="btn btn-secondary btn-file">
+                Import CSV <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+              </label>
+            </div>
+          </form>
+
+          <div class="json-preview-container">
+            <label for="jsonOutput" class="json-label">
+              <span>Generated <code id="jsonFileName">classes.json</code> content:</span>
+              <span id="copyToast" class="toast hidden">Copied to clipboard!</span>
             </label>
+            <textarea id="jsonOutput" class="json-output" readonly rows="8"></textarea>
           </div>
-        </form>
-
-        <div class="json-preview-container">
-          <label for="jsonOutput" class="json-label">
-            <span>Generated <code>classes.json</code> content:</span>
-            <span id="copyToast" class="toast hidden">Copied to clipboard!</span>
-          </label>
-          <textarea id="jsonOutput" class="json-output" readonly rows="8"></textarea>
-        </div>
+        </section>
       </section>
     </main>
 

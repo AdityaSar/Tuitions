@@ -198,7 +198,6 @@
         <section class="card form-card no-print" id="formCard">
           <h2 id="formTitle">Add New Class</h2>
           <form id="addClassForm" class="class-form">
-            <!-- Hidden input to store class ID when editing -->
             <input type="hidden" id="editClassId" value="">
 
             <div class="form-grid">
@@ -231,6 +230,7 @@
               <button type="submit" id="submitClassBtn" class="btn btn-primary">Add Class</button>
               <button type="button" id="cancelEditBtn" class="btn btn-secondary hidden">Cancel Edit</button>
               <button type="button" id="copyJsonBtn" class="btn btn-secondary">Copy Updated JSON</button>
+              <button type="button" id="resetDataBtn" class="btn btn-secondary" title="Reset local browser changes to original seed file">Reset Data</button>
               <label class="btn btn-secondary btn-file">
                 Import CSV <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
               </label>

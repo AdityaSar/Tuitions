@@ -1,6 +1,7 @@
 /**
  * Tuition Class Tracker - Multi-Subject Core Script
  * Clean Vanilla JS structured for clarity and maintainability.
+ * Includes localStorage persistence so local edits/additions persist across reloads.
  */
 
 // ==========================================
@@ -49,23 +50,45 @@ let monthlyChart = null; // Chart.js instance reference
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// LocalStorage Keys
+function getStorageKey(subjectKey) {
+  return `tuition_tracker_classes_${subjectKey}`;
+}
+
 // ==========================================
-// 2. INITIALIZATION
+// 2. INITIALIZATION & PERSISTENCE
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
 /**
- * Initializes the app by fetching JSON files for all subjects concurrently.
+ * Initializes the app by checking localStorage first, then falling back to JSON files.
  */
 async function initApp() {
   try {
     const fetchPromises = [];
 
     SUBJECTS.forEach((sub) => {
+      // 1. Load classes: Check localStorage first, otherwise fetch JSON
+      const localClasses = localStorage.getItem(getStorageKey(sub));
+      if (localClasses) {
+        try {
+          store[sub].classes = JSON.parse(localClasses);
+        } catch (e) {
+          console.warn(`Failed to parse localStorage for ${sub}, fetching default JSON.`, e);
+          fetchPromises.push(
+            fetch(`data/classes-${sub}.json`).then(res => res.json()).then(data => { store[sub].classes = data; })
+          );
+        }
+      } else {
+        fetchPromises.push(
+          fetch(`data/classes-${sub}.json`).then(res => res.json()).then(data => { store[sub].classes = data; })
+        );
+      }
+
+      // 2. Load payments from JSON
       fetchPromises.push(
-        fetch(`data/classes-${sub}.json`).then(res => res.json()).then(data => { store[sub].classes = data; }),
         fetch(`data/payments-${sub}.json`).then(res => res.json()).then(data => { store[sub].payments = data; })
       );
     });
@@ -76,6 +99,38 @@ async function initApp() {
     renderTab(currentTab);
   } catch (err) {
     console.error('Error initializing multi-subject data:', err);
+  }
+}
+
+/**
+ * Saves the current subject's classes array to localStorage.
+ */
+function saveToLocalStorage(subjectKey) {
+  if (!subjectKey || subjectKey === 'all') return;
+  try {
+    localStorage.setItem(getStorageKey(subjectKey), JSON.stringify(store[subjectKey].classes));
+  } catch (e) {
+    console.error(`Failed to save ${subjectKey} classes to localStorage:`, e);
+  }
+}
+
+/**
+ * Resets a subject's classes data to the default seed JSON file content.
+ */
+async function resetSubjectDataToSeed(subjectKey) {
+  if (!subjectKey || subjectKey === 'all') return;
+
+  if (confirm(`Are you sure you want to reset ${SUBJECT_CONFIG[subjectKey].name} data back to the default file content? Any locally unsaved form edits will be cleared.`)) {
+    try {
+      localStorage.removeItem(getStorageKey(subjectKey));
+      const res = await fetch(`data/classes-${subjectKey}.json`);
+      store[subjectKey].classes = await res.json();
+      resetFormState();
+      populateMonthFilterOptions(subjectKey);
+      renderSubjectTracker(subjectKey);
+    } catch (err) {
+      console.error(`Failed to reset ${subjectKey} data:`, err);
+    }
   }
 }
 
@@ -113,6 +168,13 @@ function setupEventListeners() {
 
   // Cancel Edit button
   document.getElementById('cancelEditBtn').addEventListener('click', resetFormState);
+
+  // Reset Data button
+  document.getElementById('resetDataBtn').addEventListener('click', () => {
+    if (currentTab !== 'all') {
+      resetSubjectDataToSeed(currentTab);
+    }
+  });
 
   // Copy JSON button
   document.getElementById('copyJsonBtn').addEventListener('click', handleCopyJson);
@@ -169,9 +231,6 @@ function renderTab(tab) {
 // 4. DATA COMPUTATION & ENRICHMENT
 // ==========================================
 
-/**
- * Calculates Day of Week string from ISO Date (YYYY-MM-DD). Handles null date cleanly.
- */
 function getDayOfWeek(dateStr) {
   if (!dateStr) return 'Undated';
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -179,15 +238,10 @@ function getDayOfWeek(dateStr) {
   return DAYS_OF_WEEK[dateObj.getDay()];
 }
 
-/**
- * Enriches class entries for a subject with class numbers (`#`), day of week, and fee block assignment.
- * Handles null dates by sorting dated entries chronologically first, followed by undated entries.
- */
 function getProcessedClasses(subjectKey) {
   const rawClasses = store[subjectKey].classes || [];
   const cfg = SUBJECT_CONFIG[subjectKey];
 
-  // Separate dated and undated classes
   const dated = rawClasses.filter(c => c.date).sort((a, b) => a.date.localeCompare(b.date));
   const undated = rawClasses.filter(c => !c.date);
   const sortedClasses = [...dated, ...undated];
@@ -217,9 +271,6 @@ function getProcessedClasses(subjectKey) {
   });
 }
 
-/**
- * Calculates sum of fees paid for a subject, ignoring null amounts.
- */
 function calculateSubjectFeesPaid(subjectKey) {
   const payments = store[subjectKey].payments || [];
   return payments.reduce((sum, p) => {
@@ -261,7 +312,6 @@ function renderAllSubjectsSummary() {
       totalAed += feesPaid;
     }
 
-    // Build subject summary card
     const card = document.createElement('div');
     card.className = 'card subject-summary-card';
     card.innerHTML = `
@@ -446,7 +496,6 @@ function renderClassesTable(processedClasses) {
     const hoursDisplay = item.hours !== null && item.hours !== undefined ? `${item.hours} hrs` : '-';
     const attendedDisplay = item.attended ? `<span class="status-pill ${statusClass}">${item.attended}</span>` : '-';
 
-    // Target identifier for editing (id or array index)
     const classIdAttr = item.id !== undefined ? item.id : store[currentTab].classes.indexOf(item);
 
     tr.innerHTML = `
@@ -465,7 +514,6 @@ function renderClassesTable(processedClasses) {
     tbody.appendChild(tr);
   });
 
-  // Attach event listeners to Edit buttons
   tbody.querySelectorAll('.btn-edit').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       const id = e.target.getAttribute('data-id');
@@ -587,16 +635,12 @@ function updateJsonPreviewTextArea(subjectKey) {
 // 7. EDIT LOG & FORM HANDLERS
 // ==========================================
 
-/**
- * Loads an existing class entry into the form for editing.
- */
 function startEditingClass(targetId) {
   if (currentTab === 'all') return;
   const rawClasses = store[currentTab].classes || [];
 
   let classToEdit = null;
 
-  // Find by numerical ID or index
   if (targetId.startsWith && targetId.startsWith('idx_')) {
     const idx = parseInt(targetId.replace('idx_', ''), 10);
     classToEdit = rawClasses[idx];
@@ -613,24 +657,18 @@ function startEditingClass(targetId) {
   editingClassId = targetId;
   document.getElementById('editClassId').value = targetId;
 
-  // Populate form fields
   document.getElementById('inputDate').value = classToEdit.date || '';
   document.getElementById('inputTime').value = classToEdit.time || '';
   document.getElementById('inputHours').value = classToEdit.hours !== null && classToEdit.hours !== undefined ? classToEdit.hours : 1.0;
   document.getElementById('inputAttended').value = classToEdit.attended || 'Yes';
 
-  // Update form UI state to Edit Mode
   document.getElementById('formTitle').textContent = 'Edit Class Entry';
   document.getElementById('submitClassBtn').textContent = 'Update Class';
   document.getElementById('cancelEditBtn').classList.remove('hidden');
 
-  // Scroll to form smoothly
   document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-/**
- * Resets form fields and restores UI state to "Add New Class".
- */
 function resetFormState() {
   editingClassId = null;
   document.getElementById('editClassId').value = '';
@@ -645,9 +683,6 @@ function resetFormState() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
 }
 
-/**
- * Handles form submission for both Adding a new class and Updating an existing class.
- */
 function handleFormSubmit(e) {
   e.preventDefault();
   if (currentTab === 'all') return;
@@ -659,7 +694,6 @@ function handleFormSubmit(e) {
   const attendedVal = document.getElementById('inputAttended').value;
 
   if (editingClassId !== null) {
-    // EDIT MODE: Update existing entry
     let targetObj = null;
     if (editingClassId.startsWith && editingClassId.startsWith('idx_')) {
       const idx = parseInt(editingClassId.replace('idx_', ''), 10);
@@ -679,7 +713,6 @@ function handleFormSubmit(e) {
       targetObj.attended = attendedVal;
     }
   } else {
-    // ADD MODE: Create new entry
     const maxId = rawClasses.reduce((max, c) => (typeof c.id === 'number' ? Math.max(max, c.id) : max), 0);
 
     const newClass = {
@@ -692,6 +725,9 @@ function handleFormSubmit(e) {
 
     rawClasses.push(newClass);
   }
+
+  // Save to localStorage for browser persistence across reloads
+  saveToLocalStorage(currentTab);
 
   resetFormState();
   populateMonthFilterOptions(currentTab);
@@ -826,6 +862,7 @@ function handleCsvImport(e) {
 
     if (importedClasses.length > 0) {
       store[currentTab].classes = importedClasses;
+      saveToLocalStorage(currentTab);
       resetFormState();
       populateMonthFilterOptions(currentTab);
       renderSubjectTracker(currentTab);

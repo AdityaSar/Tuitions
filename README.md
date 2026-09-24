@@ -9,6 +9,9 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
 ## Features
 
 - 📑 **Subject Navigation Tabs**: Switch seamlessly between **All Subjects Overview**, **Maths**, **Physics**, **Chemistry**, and **Computers**.
+- 💾 **Automatic Local Persistence (`localStorage`)**:
+  - Any newly added or edited classes persist automatically in your browser across page reloads.
+  - Includes a **Reset Data** button if you wish to clear local browser modifications and revert back to the original JSON file content.
 - 📊 **All Subjects Summary**: View combined totals (attended classes, total hours) and separate currency fee totals (INR for Maths/Physics/Chemistry, AED for Computers).
 - 📦 **Subject-Specific Fee Block Tracker**:
   - **Maths**: 10-class blocks (INR), with progress bar and `Payment due` banner.
@@ -24,7 +27,7 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
   - Filter log by specific month.
 - 📈 **Monthly Chart**: Visual bar chart powered by Chart.js showing attended classes per month.
 - ➕ **Add / Edit Class Form & JSON Generator**:
-  - Form to log new classes or update existing classes per subject in-memory.
+  - Form to log new classes or update existing classes per subject in-memory and in browser storage.
   - **Copy Updated JSON**: Generates updated JSON formatting to commit directly into `/data/classes-{subject}.json` on GitHub.
   - **CSV Import**: Easily upload CSV logs per subject.
 - 📤 **Exporting**:
@@ -84,20 +87,22 @@ Hosted on **GitHub Pages** with zero backend, zero build steps, and zero framewo
 
 ---
 
-## How to Add or Edit a Class (Updating Data on GitHub)
+## How to Add or Edit a Class (Saving Permanently to GitHub)
 
 1. Select the relevant subject tab (e.g. **Maths**).
-2. **To Add a Class**: Fill in the **Add New Class** form.
-3. **To Edit a Class**: Click **Edit** next to any class row in the Class Log table. The details will populate into the form; make your changes and click **Update Class**.
-4. Click **Copy Updated JSON**.
-5. Navigate to your GitHub repository: `data/classes-{subject}.json`.
-6. Click the edit (pencil) icon, replace file contents with copied JSON, and click **Commit changes**.
+2. **To Add a Class**: Fill in the form and click **Add Class**.
+3. **To Edit a Class**: Click **Edit** next to any class row in the Class Log table, adjust fields, and click **Update Class**.
+4. Your changes save automatically in your browser (`localStorage`) so they won't vanish when refreshing.
+5. To commit your changes permanently to GitHub:
+   - Click **Copy Updated JSON**.
+   - Navigate to your GitHub repository: `data/classes-{subject}.json`.
+   - Click the edit (pencil) icon, paste the copied JSON, and click **Commit changes**.
 
 ---
 
 ## Running Locally
 
-Because the application uses `fetch()` to load the JSON files from `/data/`, serve the directory using a local HTTP server:
+Because the application uses `fetch()` to load the initial JSON files from `/data/`, serve the directory using a local HTTP server:
 
 ```bash
 python3 -m http.server 8000

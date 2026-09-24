@@ -278,6 +278,28 @@ function calculateSubjectFeesPaid(subjectKey) {
   }, 0);
 }
 
+/**
+ * Calculates the number of attended classes since the latest recorded payment date.
+ */
+function getClassesSinceLastPayment(subjectKey, processedClasses) {
+  const payments = store[subjectKey].payments || [];
+  const paymentDates = payments.map(p => p.date).filter(Boolean).sort();
+
+  if (paymentDates.length === 0) {
+    return processedClasses.filter(c => c.attended === 'Yes').length;
+  }
+
+  const lastPaymentDate = paymentDates[paymentDates.length - 1];
+
+  const classesAfter = processedClasses.filter(c => {
+    if (c.attended !== 'Yes') return false;
+    if (!c.date) return true;
+    return c.date > lastPaymentDate;
+  });
+
+  return classesAfter.length;
+}
+
 // ==========================================
 // 5. ALL SUBJECTS OVERVIEW RENDER
 // ==========================================
@@ -413,9 +435,11 @@ function renderSubjectBlockTracker(subjectKey, processedClasses) {
     progressBarWrapper.classList.add('hidden');
     banner.classList.add('hidden');
 
+    const sinceLastPayment = getClassesSinceLastPayment(subjectKey, processedClasses);
+
     document.getElementById('blockTrackerTitle').textContent = `${cfg.name} Fee Tracker Status`;
     document.getElementById('blockTrackerSubtext').textContent = `Total Attended: ${attendedCount} classes`;
-    document.getElementById('blockBadge').textContent = `${attendedCount} classes total`;
+    document.getElementById('blockBadge').textContent = `${sinceLastPayment} class(es) since last payment`;
   }
 }
 
@@ -726,7 +750,6 @@ function handleFormSubmit(e) {
     rawClasses.push(newClass);
   }
 
-  // Save to localStorage for browser persistence across reloads
   saveToLocalStorage(currentTab);
 
   resetFormState();
